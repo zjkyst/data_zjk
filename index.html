@@ -524,7 +524,8 @@ function renderAdminTargets(){
     var yearOpts = years.map(function(y){ return '<option value="'+y+'"'+(y===curYear?' selected':'')+'>'+y+'年</option>'; }).join('');
     // 渲染年份选择 + 查询该年目标
     var topHtml = '<div class="row-flex" style="margin-bottom:10px;">'+
-      '<div class="field-inline"><label>目标年份：</label><select id="targetYearSelect" onchange="renderAdminTargets()">'+yearOpts+'</select></div></div>';
+      '<div class="field-inline"><label>目标年份：</label><select id="targetYearSelect" onchange="renderAdminTargets()">'+yearOpts+'</select></div>'+
+      '<button class="btn btn-secondary btn-sm" onclick="addNewTargetYear()">+ 新增年份</button></div>';
     sb.from("regions").select("*").eq("year", curYear).order("region").then(function(res){
       if(res.error){ el.innerHTML = topHtml + '<div class="notice">加载失败：'+res.error.message+'</div>'; return; }
       var list = res.data || [];
@@ -571,6 +572,29 @@ function saveAdminTargets(){
         statusEl.textContent = errCount > 0 ? ("保存完成，"+errCount+" 个失败") : "全部保存成功 ✓";
         if(errCount > 0) renderAdminTargets();
       }
+    });
+  });
+}
+
+// 新增目标年份（复制上一年的所有目标）
+function addNewTargetYear(){
+  var sel = document.getElementById("targetYearSelect");
+  if(!sel) return;
+  var curYear = +sel.value;
+  var newYear = curYear + 1;
+  if(!confirm("即将创建 " + newYear + " 年目标（从 " + curYear + " 年复制），确认？")) return;
+  // 复制该年所有目标
+  sb.from("regions").select("*").eq("year", curYear).then(function(res){
+    if(res.error){ alert("读取失败："+res.error.message); return; }
+    var rows = res.data || [];
+    if(rows.length === 0){ alert(curYear + " 年无目标数据，无法复制。"); return; }
+    var inserts = rows.map(function(r){
+      return sb.from("regions").insert({ year: newYear, region: r.region, peixun_target: r.peixun_target, jineng_target: r.jineng_target, gjg_target: r.gjg_target });
+    });
+    Promise.all(inserts).then(function(results){
+      var errs = results.filter(function(r){ return r.error; }).length;
+      if(errs > 0){ alert("部分新增失败，"+errs+" 个错误"); }
+      renderAdminTargets(); // 刷新
     });
   });
 }
