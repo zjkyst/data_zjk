@@ -1,7 +1,7 @@
 name: Sync fork with upstream API
 on:
   schedule:
-    - cron: "0 0 * * *"      # 每天 UTC 0 点运行
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
