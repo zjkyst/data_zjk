@@ -13,7 +13,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #eef2f7; color: #333; min-height: 100vh; padding-bottom: 40px; }
-  .container { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 16px; }
   .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 24px; margin-bottom: 20px; }
   h1 { font-size: 21px; color: #1a2a4a; margin-bottom: 6px; }
   .subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
@@ -34,6 +34,7 @@
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .readonly-input { background: #f6f8fb; color: #4a5568; }
   .hint { font-size: 12px; color: #98a2b3; margin-top: 4px; }
+  .table-wrap { overflow-x: auto; }
   .save-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 10px; }
   .status { font-size: 13px; color: #0b8043; }
   .notice { font-size: 13px; color: #d93025; margin-top: 14px; line-height: 1.7; }
@@ -53,6 +54,7 @@
   .field-inline label { margin-right:6px; display:inline; }
   .field-inline select { width:auto; display:inline-block; }
   .history-table td.left { text-align:left; font-size:12px; color:#444; }
+  #adminCur table, #adminCum table, #adminLog table, #memberHistory table { display:block; overflow-x:auto; max-width:100%; }
   .target-input { width: 80px !important; padding: 4px 6px !important; font-size: 13px !important; }
 </style>
 </head>
@@ -444,40 +446,43 @@ function renderAdminTables(){
 function adminBuildTable(month, mode){
   var html = '<p class="notice-info">'+(mode==="cur"?"当月新增表（"+month+"）":"累计表（截至"+month+"）")+'</p>';
   html += '<table><thead><tr>'+
-    '<th rowspan="2">县区</th><th colspan="9">开展补贴性职业技能培训</th><th colspan="2">其他培训</th><th rowspan="2">太原培训<br>(=培训+其他)</th>'+
+    '<th rowspan="2">县区</th><th colspan="11">开展补贴性职业技能培训</th><th colspan="2">其他培训</th><th rowspan="2">太原培训<br>(=培训+其他)</th>'+
     '<th colspan="5">技能人才</th><th colspan="5">高级工以上</th></tr>'+
-    '<tr><th>目标</th><th>重点群体<br>(6类合计)</th><th>企业职工</th><th>创业</th><th>完成情况</th><th>%</th><th>百行百业</th><th>公益类</th><th>太原培训</th>'+
+    '<tr><th>目标</th><th>毕高</th><th>未初</th><th>农村</th><th>脱贫</th><th>困难</th><th>失业</th><th>企业</th><th>创业</th><th>完成</th><th>%</th>'+
+    '<th>百行</th><th>公益</th>'+
     '<th>目标</th><th>省级</th><th>市级</th><th>总计</th><th>%</th>'+
     '<th>目标</th><th>省级</th><th>市级</th><th>总计</th><th>%</th></tr></thead><tbody>';
-  var sum = { p_zd:0,p_qy:0,p_c:0,p_g:0,p_b:0, j1:0,j2:0,g1:0,g2:0, pt:0,jt:0,gt:0 };
+  var sum = { b:0,ch:0,n:0,t:0,k:0,sh:0, qy:0,cy:0,g:0,bh:0, j1:0,j2:0,g1:0,g2:0, pt:0,jt:0,gt:0 };
   var _y = month.split("-")[0];
   REGIONS.forEach(function(region){
     var t = (regionsData[_y]||{})[region]||{};
     var rows = adminRows[region]||{};
-    var r; var p_zd=0,p_qy=0,p_c=0,p_g=0,p_b=0, j1=0,j2=0,g1=0,g2=0;
+    var r; var b=0,ch=0,n=0,t=0,k=0,sh=0, qy=0,cy=0,g=0,bh=0, j1=0,j2=0,g1=0,g2=0;
     function acc(row){
-      p_zd += (+row.peixun_zd_biye_c||0)+(+row.peixun_zd_chuzhong_c||0)+(+row.peixun_zd_nongcun_c||0)+(+row.peixun_zd_tuopin_c||0)+(+row.peixun_zd_kunnan_c||0)+(+row.peixun_zd_shiye_c||0);
-      p_qy += +row.peixun_qiye_c||0; p_c += +row.peixun_chuangye_c||0;
-      p_g += +row.peixun_gongyi_c||0; p_b += +row.peixun_baihang_c||0;
-      j1 += +row.jineng_sheng_c||0; j2 += +row.jineng_shi_c||0; g1 += +row.gjg_sheng_c||0; g2 += +row.gjg_shi_c||0;
+      b+=+row.peixun_zd_biye_c||0; ch+=+row.peixun_zd_chuzhong_c||0; n+=+row.peixun_zd_nongcun_c||0;
+      t+=+row.peixun_zd_tuopin_c||0; k+=+row.peixun_zd_kunnan_c||0; sh+=+row.peixun_zd_shiye_c||0;
+      qy+=+row.peixun_qiye_c||0; cy+=+row.peixun_chuangye_c||0;
+      g+=+row.peixun_gongyi_c||0; bh+=+row.peixun_baihang_c||0;
+      j1+=+row.jineng_sheng_c||0; j2+=+row.jineng_shi_c||0; g1+=+row.gjg_sheng_c||0; g2+=+row.gjg_shi_c||0;
     }
     if(mode==="cur"){ r = rows[month]||{}; acc(r); }
     else { Object.keys(rows).forEach(function(m){ if(m<=month) acc(rows[m]); }); }
-    var pF = p_zd + p_qy + p_c;             // 培训完成情况 = 重点群体(6类合计) + 企业 + 创业
-    var pTai = pF + p_g + p_b;              // 太原培训 = 培训完成 + 公益 + 百行
-    var jt = j1+j2, gt = g1+g2;
-    sum.p_zd+=p_zd; sum.p_qy+=p_qy; sum.p_c+=p_c; sum.p_g+=p_g; sum.p_b+=p_b; sum.j1+=j1; sum.j2+=j2; sum.g1+=g1; sum.g2+=g2;
+    var pF = b+ch+n+t+k+sh+qy+cy;
+    var pTai = pF+g+bh; var jt=j1+j2, gt=g1+g2;
+    sum.b+=b; sum.ch+=ch; sum.n+=n; sum.t+=t; sum.k+=k; sum.sh+=sh; sum.qy+=qy; sum.cy+=cy; sum.g+=g; sum.bh+=bh;
+    sum.j1+=j1; sum.j2+=j2; sum.g1+=g1; sum.g2+=g2;
     sum.pt+=+t.peixun_target||0; sum.jt+=+t.jineng_target||0; sum.gt+=+t.gjg_target||0;
     html += '<tr><td class="req">'+region+'</td>'+
-      '<td>'+(+t.peixun_target||0)+'</td><td>'+p_zd+'</td><td>'+p_qy+'</td><td>'+p_c+'</td><td>'+pF+'</td><td>'+pctCell(pF,t.peixun_target)+'</td>'+
-      '<td>'+p_b+'</td><td>'+p_g+'</td><td>'+pTai+'</td>'+
+      '<td>'+(+t.peixun_target||0)+'</td><td>'+b+'</td><td>'+ch+'</td><td>'+n+'</td><td>'+t+'</td><td>'+k+'</td><td>'+sh+'</td><td>'+qy+'</td><td>'+cy+'</td><td>'+pF+'</td><td>'+pctCell(pF,t.peixun_target)+'</td>'+
+      '<td>'+bh+'</td><td>'+g+'</td><td>'+pTai+'</td>'+
       '<td>'+(+t.jineng_target||0)+'</td><td>'+j1+'</td><td>'+j2+'</td><td>'+jt+'</td><td>'+pctCell(jt,t.jineng_target)+'</td>'+
       '<td>'+(+t.gjg_target||0)+'</td><td>'+g1+'</td><td>'+g2+'</td><td>'+gt+'</td><td>'+pctCell(gt,t.gjg_target)+'</td></tr>';
   });
-  var sZD = sum.p_zd, sF2 = sum.p_zd+sum.p_qy+sum.p_c, sTai2 = sF2+sum.p_g+sum.p_b, sJT=sum.j1+sum.j2, sGT=sum.g1+sum.g2;
+  var sB=sum.b,sCH=sum.ch,sN=sum.n,sT=sum.t,sK=sum.k,sSH=sum.sh, sF2=sB+sCH+sN+sT+sK+sSH+sum.qy+sum.cy, sTai2=sF2+sum.g+sum.bh;
+  var sJT=sum.j1+sum.j2, sGT=sum.g1+sum.g2;
   html += '<tr style="background:#fff7e6;font-weight:600;"><td class="req">太原市（汇总）</td>'+
-    '<td>'+sum.pt+'</td><td>'+sZD+'</td><td>'+sum.p_qy+'</td><td>'+sum.p_c+'</td><td>'+sF2+'</td><td>'+pctCell(sF2,sum.pt)+'</td>'+
-    '<td>'+sum.p_b+'</td><td>'+sum.p_g+'</td><td>'+sTai2+'</td>'+
+    '<td>'+sum.pt+'</td><td>'+sB+'</td><td>'+sCH+'</td><td>'+sN+'</td><td>'+sT+'</td><td>'+sK+'</td><td>'+sSH+'</td><td>'+sum.qy+'</td><td>'+sum.cy+'</td><td>'+sF2+'</td><td>'+pctCell(sF2,sum.pt)+'</td>'+
+    '<td>'+sum.bh+'</td><td>'+sum.g+'</td><td>'+sTai2+'</td>'+
     '<td>'+sum.jt+'</td><td>'+sum.j1+'</td><td>'+sum.j2+'</td><td>'+sJT+'</td><td>'+pctCell(sJT,sum.jt)+'</td>'+
     '<td>'+sum.gt+'</td><td>'+sum.g1+'</td><td>'+sum.g2+'</td><td>'+sGT+'</td><td>'+pctCell(sGT,sum.gt)+'</td></tr>';
   html += '</tbody></table>';
