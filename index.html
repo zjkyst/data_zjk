@@ -574,6 +574,20 @@ function saveAdminTargets(){
       done++;
       if(res.error) errCount++;
       if(done === updateKeys.length){
+        if(errCount === 0){
+          // 保存成功 → 手动更新 regionsData 缓存，累计表立即生效
+          updateKeys.forEach(function(key){
+            var u = updates[key];
+            if(!regionsData[u.year]) regionsData[u.year] = {};
+            regionsData[u.year][u.region] = {
+              year: u.year, region: u.region,
+              peixun_target: u.peixun_target,
+              jineng_target: u.jineng_target,
+              gjg_target: u.gjg_target
+            };
+          });
+          if(typeof renderAdminTables === 'function') renderAdminTables();
+        }
         statusEl.textContent = errCount > 0 ? ("保存完成，"+errCount+" 个失败") : "全部保存成功 ✓";
         if(errCount > 0) renderAdminTargets();
       }
