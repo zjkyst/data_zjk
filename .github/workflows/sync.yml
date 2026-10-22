@@ -1,4 +1,4 @@
-name: Sync fork with upstream API
+name: Sync My Fork
 on:
   schedule:
     - cron: "0 0 * * *"
