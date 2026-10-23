@@ -92,6 +92,17 @@ alter table public.profiles        enable row level security;
 create policy "regions_select_auth" on public.regions
   for select to authenticated using (true);
 
+-- regions 表：仅管理员可插入新年度目标
+create policy "regions_insert_admin" on public.regions
+  for insert to authenticated
+  with check ((select is_admin from public.profiles where id = auth.uid()) = true);
+
+-- regions 表：仅管理员可修改目标值
+create policy "regions_update_admin" on public.regions
+  for update to authenticated
+  using ((select is_admin from public.profiles where id = auth.uid()) = true)
+  with check ((select is_admin from public.profiles where id = auth.uid()) = true);
+
 -- monthly_reports 表：只能读取自己县区的，或者是管理员读取所有
 create policy "monthly_select_own_or_admin" on public.monthly_reports
   for select to authenticated

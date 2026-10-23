@@ -532,8 +532,27 @@ function renderAdminTargets(){
       '<div class="field-inline"><label>目标年份：</label><select id="targetYearSelect" onchange="renderAdminTargets()">'+yearOpts+'</select></div>'+
       '<button class="btn btn-secondary btn-sm" onclick="addNewTargetYear()">+ 新增年份</button></div>';
     sb.from("regions").select("*").eq("year", curYear).order("region").then(function(res){
-      if(res.error){ el.innerHTML = topHtml + '<div class="notice">加载失败：'+res.error.message+'</div>'; return; }
-      var list = res.data || [];
+      if(res.error || !(res.data&&res.data.length)){
+        // 查询失败或没数据时，从前端缓存的 regionsData 获取
+        var fallback = (regionsData[curYear]||{});
+        var regionNames = Object.keys(fallback);
+        if(regionNames.length === 0) regionNames = REGIONS.concat(["太原市"]);
+        var html = topHtml + '<p class="notice-info">编辑修改全年目标任务（仅管理员可操作）。如数据为空，请先通过"新增年份"创建。</p>';
+        html += '<table><thead><tr><th>县区</th><th>培训目标</th><th>技能人才目标</th><th>高级工以上目标</th></tr></thead><tbody>';
+        regionNames.forEach(function(rn){
+          var fb = fallback[rn] || {};
+          html += '<tr><td class="req">'+rn+'</td>'+
+            '<td><input type="number" class="target-input" data-year="'+curYear+'" data-region="'+rn+'" data-field="peixun_target" value="'+(+fb.peixun_target||0)+'"></td>'+
+            '<td><input type="number" class="target-input" data-year="'+curYear+'" data-region="'+rn+'" data-field="jineng_target" value="'+(+fb.jineng_target||0)+'"></td>'+
+            '<td><input type="number" class="target-input" data-year="'+curYear+'" data-region="'+rn+'" data-field="gjg_target" value="'+(+fb.gjg_target||0)+'"></td></tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div class="save-row"><span class="status" id="targetSaveStatus"></span>'+
+          '<button class="btn btn-primary" onclick="saveAdminTargets()">保存所有目标</button></div>';
+        el.innerHTML = html;
+        return;
+      }
+      var list = res.data;
       var html = topHtml + '<p class="notice-info">编辑修改全年目标任务（仅管理员可操作，修改将同步到数据库）。</p>';
       html += '<table><thead><tr><th>县区</th><th>培训目标</th><th>技能人才目标</th><th>高级工以上目标</th></tr></thead><tbody>';
       list.forEach(function(r){
@@ -572,27 +591,28 @@ function saveAdminTargets(){
     sb.from("regions").update({peixun_target: u.peixun_target, jineng_target: u.jineng_target, gjg_target: u.gjg_target})
       .eq("year", u.year).eq("region", u.region).then(function(res){
       done++;
-      if(res.error) errCount++;
-      if(done === updateKeys.length){
-        if(errCount === 0){
-          // 保存成功 → 手动更新 regionsData 缓存，累计表立即生效
-          updateKeys.forEach(function(key){
-            var u = updates[key];
-            if(!regionsData[u.year]) regionsData[u.year] = {};
-            regionsData[u.year][u.region] = {
-              year: u.year, region: u.region,
-              peixun_target: u.peixun_target,
-              jineng_target: u.jineng_target,
-              gjg_target: u.gjg_target
-            };
+      if(res.error){
+        // 可能是行不存在，尝试 insert
+        sb.from("regions").insert({year: u.year, region: u.region, peixun_target: u.peixun_target, jineng_target: u.jineng_target, gjg_target: u.gjg_target})
+          .then(function(insRes){
+            if(insRes.error) errCount++;
+            if(done === updateKeys.length) finalize();
           });
-          if(typeof renderAdminTables === 'function') renderAdminTables();
-        }
-        statusEl.textContent = errCount > 0 ? ("保存完成，"+errCount+" 个失败") : "全部保存成功 ✓";
-        if(errCount > 0) renderAdminTargets();
+      } else {
+        if(done === updateKeys.length) finalize();
       }
     });
   });
+  function finalize(){
+    // 手动刷新 regionsData 缓存
+    updateKeys.forEach(function(key){
+      var u = updates[key];
+      if(!regionsData[u.year]) regionsData[u.year] = {};
+      regionsData[u.year][u.region] = { year: u.year, region: u.region, peixun_target: u.peixun_target, jineng_target: u.jineng_target, gjg_target: u.gjg_target };
+    });
+    if(typeof renderAdminTables === 'function') renderAdminTables();
+    statusEl.textContent = errCount > 0 ? ("保存完成，"+errCount+" 个失败（已重试）") : "全部保存成功 ✓";
+  }
 }
 
 // 新增目标年份（复制上一年的所有目标）
