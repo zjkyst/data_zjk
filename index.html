@@ -461,28 +461,28 @@ function adminBuildTable(month, mode){
   REGIONS.forEach(function(region){
     var t = (regionsData[_y]||{})[region]||{};
     var rows = adminRows[region]||{};
-    var r; var b=0,ch=0,n=0,t=0,k=0,sh=0, qy=0,cy=0,g=0,bh=0, j1=0,j2=0,g1=0,g2=0;
+    var r; var b=0,ch=0,n=0,t4=0,k=0,sh=0, qy=0,cy=0,g=0,bh=0, j1=0,j2=0,g1=0,g2=0;
     function acc(row){
       b+=+row.peixun_zd_biye_c||0; ch+=+row.peixun_zd_chuzhong_c||0; n+=+row.peixun_zd_nongcun_c||0;
-      t+=+row.peixun_zd_tuopin_c||0; k+=+row.peixun_zd_kunnan_c||0; sh+=+row.peixun_zd_shiye_c||0;
+      t4+=+row.peixun_zd_tuopin_c||0; k+=+row.peixun_zd_kunnan_c||0; sh+=+row.peixun_zd_shiye_c||0;
       qy+=+row.peixun_qiye_c||0; cy+=+row.peixun_chuangye_c||0;
       g+=+row.peixun_gongyi_c||0; bh+=+row.peixun_baihang_c||0;
       j1+=+row.jineng_sheng_c||0; j2+=+row.jineng_shi_c||0; g1+=+row.gjg_sheng_c||0; g2+=+row.gjg_shi_c||0;
     }
     if(mode==="cur"){ r = rows[month]||{}; acc(r); }
     else { Object.keys(rows).forEach(function(m){ if(m<=month) acc(rows[m]); }); }
-    var pF = b+ch+n+t+k+sh+qy+cy;
+    var pF = b+ch+n+t4+k+sh+qy+cy;
     var pTai = pF+g+bh; var jt=j1+j2, gt=g1+g2;
-    sum.b+=b; sum.ch+=ch; sum.n+=n; sum.t+=t; sum.k+=k; sum.sh+=sh; sum.qy+=qy; sum.cy+=cy; sum.g+=g; sum.bh+=bh;
+    sum.b+=b; sum.ch+=ch; sum.n+=n; sum.t4+=t4; sum.k+=k; sum.sh+=sh; sum.qy+=qy; sum.cy+=cy; sum.g+=g; sum.bh+=bh;
     sum.j1+=j1; sum.j2+=j2; sum.g1+=g1; sum.g2+=g2;
     sum.pt+=+t.peixun_target||0; sum.jt+=+t.jineng_target||0; sum.gt+=+t.gjg_target||0;
     html += '<tr><td class="req">'+region+'</td>'+
-      '<td>'+(+t.peixun_target||0)+'</td><td>'+b+'</td><td>'+ch+'</td><td>'+n+'</td><td>'+t+'</td><td>'+k+'</td><td>'+sh+'</td><td>'+qy+'</td><td>'+cy+'</td><td>'+pF+'</td><td>'+pctCell(pF,t.peixun_target)+'</td>'+
+      '<td>'+(+t.peixun_target||0)+'</td><td>'+b+'</td><td>'+ch+'</td><td>'+n+'</td><td>'+t4+'</td><td>'+k+'</td><td>'+sh+'</td><td>'+qy+'</td><td>'+cy+'</td><td>'+pF+'</td><td>'+pctCell(pF,t.peixun_target)+'</td>'+
       '<td>'+bh+'</td><td>'+g+'</td><td>'+pTai+'</td>'+
       '<td>'+(+t.jineng_target||0)+'</td><td>'+j1+'</td><td>'+j2+'</td><td>'+jt+'</td><td>'+pctCell(jt,t.jineng_target)+'</td>'+
       '<td>'+(+t.gjg_target||0)+'</td><td>'+g1+'</td><td>'+g2+'</td><td>'+gt+'</td><td>'+pctCell(gt,t.gjg_target)+'</td></tr>';
   });
-  var sB=sum.b,sCH=sum.ch,sN=sum.n,sT=sum.t,sK=sum.k,sSH=sum.sh, sF2=sB+sCH+sN+sT+sK+sSH+sum.qy+sum.cy, sTai2=sF2+sum.g+sum.bh;
+  var sB=sum.b,sCH=sum.ch,sN=sum.n,sT=sum.t4,sK=sum.k,sSH=sum.sh, sF2=sB+sCH+sN+sT+sK+sSH+sum.qy+sum.cy, sTai2=sF2+sum.g+sum.bh;
   var sJT=sum.j1+sum.j2, sGT=sum.g1+sum.g2;
   html += '<tr style="background:#fff7e6;font-weight:600;"><td class="req">太原市（汇总）</td>'+
     '<td>'+sum.pt+'</td><td>'+sB+'</td><td>'+sCH+'</td><td>'+sN+'</td><td>'+sT+'</td><td>'+sK+'</td><td>'+sSH+'</td><td>'+sum.qy+'</td><td>'+sum.cy+'</td><td>'+sF2+'</td><td>'+pctCell(sF2,sum.pt)+'</td>'+
