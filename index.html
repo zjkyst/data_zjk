@@ -248,7 +248,11 @@ function afterAuth(){
 
 function loadRegions(cb){
   sb.from("regions").select("*").then(function(res){
-    if(res.error){ alert("加载目标数据失败："+res.error.message); return; }
+    if(res.error || !res.data || res.data.length === 0){
+      // 查询失败或无数据时保留已有缓存（避免之前保存的目标被清空）
+      if(typeof cb === 'function') cb();
+      return;
+    }
     regionsData = {};
     (res.data||[]).forEach(function(r){
       var y = r.year || 2026;
@@ -586,33 +590,26 @@ function saveAdminTargets(){
   if(updateKeys.length === 0){ statusEl.textContent = "没有数据可保存。"; return; }
   statusEl.textContent = "正在保存…";
   var done = 0;
+  // 用 upsert 替代先 update 再 fallback insert 的两步法
   updateKeys.forEach(function(key){
     var u = updates[key];
-    sb.from("regions").update({peixun_target: u.peixun_target, jineng_target: u.jineng_target, gjg_target: u.gjg_target})
-      .eq("year", u.year).eq("region", u.region).then(function(res){
+    var record = { year: u.year, region: u.region, peixun_target: u.peixun_target, jineng_target: u.jineng_target, gjg_target: u.gjg_target };
+    sb.from("regions").upsert(record, { onConflict: "year,region" }).then(function(res){
       done++;
-      if(res.error){
-        // 可能是行不存在，尝试 insert
-        sb.from("regions").insert({year: u.year, region: u.region, peixun_target: u.peixun_target, jineng_target: u.jineng_target, gjg_target: u.gjg_target})
-          .then(function(insRes){
-            if(insRes.error) errCount++;
-            if(done === updateKeys.length) finalize();
-          });
-      } else {
-        if(done === updateKeys.length) finalize();
+      if(res.error) errCount++;
+      // 无论 success/error，每次完成后检查是否全部完成
+      if(done === updateKeys.length){
+        // 手动刷新 regionsData 缓存
+        updateKeys.forEach(function(kk){
+          var uu = updates[kk];
+          if(!regionsData[uu.year]) regionsData[uu.year] = {};
+          regionsData[uu.year][uu.region] = { year: uu.year, region: uu.region, peixun_target: uu.peixun_target, jineng_target: uu.jineng_target, gjg_target: uu.gjg_target };
+        });
+        if(typeof renderAdminTables === 'function') renderAdminTables();
+        statusEl.textContent = errCount > 0 ? ("保存完成，" + errCount + " 个失败：请确认数据库RLS策略已添加") : "全部保存成功 ✓";
       }
     });
   });
-  function finalize(){
-    // 手动刷新 regionsData 缓存
-    updateKeys.forEach(function(key){
-      var u = updates[key];
-      if(!regionsData[u.year]) regionsData[u.year] = {};
-      regionsData[u.year][u.region] = { year: u.year, region: u.region, peixun_target: u.peixun_target, jineng_target: u.jineng_target, gjg_target: u.gjg_target };
-    });
-    if(typeof renderAdminTables === 'function') renderAdminTables();
-    statusEl.textContent = errCount > 0 ? ("保存完成，"+errCount+" 个失败（已重试）") : "全部保存成功 ✓";
-  }
 }
 
 // 新增目标年份（复制上一年的所有目标）
